@@ -13,3 +13,6 @@ url-shortener-frontend/.DS_Store
 .DS_Store
 *.log
 .env
+
+static/qr/
+
