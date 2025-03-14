@@ -38,7 +38,7 @@ Shortify is a **full-stack URL shortener and QR code generator** built using **F
 - **Frontend (AWS Amplify):** [Live Demo](https://main.d3fwhdos1eu6vo.amplifyapp.com/)
 - **Backend (Render):** [API Base URL](https://shortify-url-shortener-and-qr-code.onrender.com/)
 
-  ### ⚠️ **Note about Render's Free Tier**  
+### ⚠️ **Note about Render's Free Tier**  
 - The backend **may take a few seconds to spin up** if it hasn’t been used in a while. Please be patient when making requests.  
 - The backend **does not have a landing page yet**, so visiting the base Render URL (`/`) will return a `404 Not Found` response.  
 
