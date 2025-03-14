@@ -22,7 +22,7 @@ class ShortURL(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     original_url = db.Column(db.String(500), nullable=False)
     short_code = db.Column(db.String(10), unique=True, nullable=False)
-    qr_code = db.Column(db.String(500), nullable=True)  # Path to QR code image
+    qr_code = db.Column(db.String(500), nullable=True)  # Full URL to QR code image
     clicks = db.Column(db.Integer, default=0)
     last_clicked = db.Column(db.DateTime, nullable=True)  # Track last click timestamp
     created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
@@ -39,16 +39,18 @@ def generate_short_code():
 def is_valid_short_code(code):
     return bool(re.match("^[a-zA-Z0-9]+$", code))  # ✅ Allow only letters and numbers
 
-# Function to generate a QR code
+# Function to generate a QR code and return a full URL
 def generate_qr_code(short_url):
     qr = qrcode.make(short_url)
     qr_folder = os.path.join(BASE_DIR, "static", "qr")
     os.makedirs(qr_folder, exist_ok=True)
 
-    qr_path = os.path.join(qr_folder, f"{short_url.split('/')[-1]}.png")
+    qr_filename = f"{short_url.split('/')[-1]}.png"
+    qr_path = os.path.join(qr_folder, qr_filename)
     qr.save(qr_path)
 
-    return f"static/qr/{short_url.split('/')[-1]}.png"
+    # ✅ Return full URL instead of a relative path
+    return f"{request.host_url}static/qr/{qr_filename}"
 
 # Route to shorten a URL (with QR code)
 @app.route('/shorten', methods=['POST'])
@@ -72,20 +74,21 @@ def shorten_url():
     else:
         short_code = generate_short_code()
 
-    short_url = f"http://127.0.0.1:5000/{short_code}"
+    # ✅ Use the actual deployed host URL (not 127.0.0.1)
+    short_url = f"{request.host_url}{short_code}"
 
-    # Generate QR Code
-    qr_code_path = generate_qr_code(short_url)
+    # ✅ Generate full URL for QR Code
+    qr_code_url = generate_qr_code(short_url)
 
     # Store in database
-    new_short_url = ShortURL(original_url=original_url, short_code=short_code, qr_code=qr_code_path)
+    new_short_url = ShortURL(original_url=original_url, short_code=short_code, qr_code=qr_code_url)
     db.session.add(new_short_url)
     db.session.commit()
 
     return jsonify({
         "original_url": original_url,
         "short_url": short_url,
-        "qr_code": f"http://127.0.0.1:5000/{qr_code_path}"
+        "qr_code": qr_code_url  # ✅ Return full URL for QR code
     })
 
 # Route to redirect a short URL to the original URL & track clicks
@@ -111,7 +114,7 @@ def get_analytics(short_code):
 
     return jsonify({
         "original_url": short_url.original_url,
-        "short_url": f"http://127.0.0.1:5000/{short_url.short_code}",
+        "short_url": f"{request.host_url}{short_url.short_code}",  # ✅ Use Render URL
         "clicks": short_url.clicks,
         "created_at": short_url.created_at.strftime("%Y-%m-%d %H:%M:%S"),
         "last_clicked": short_url.last_clicked.strftime("%Y-%m-%d %H:%M:%S") if short_url.last_clicked else "Never clicked"
