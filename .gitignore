@@ -1,0 +1,15 @@
+# Ignore Python environment and database
+venv/
+__pycache__/
+database.db
+instance/
+
+# Ignore frontend dependencies
+url-shortener-frontend/node_modules/
+url-shortener-frontend/build/
+url-shortener-frontend/.DS_Store
+
+# Ignore system files
+.DS_Store
+*.log
+.env
