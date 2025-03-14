@@ -8,12 +8,12 @@ import re  # ✅ Import regex for validation
 from datetime import datetime
 
 app = Flask(__name__)
-CORS(app)  # ✅ Enable CORS to allow frontend access
+CORS(app)
 
-# Database configuration (Use PostgreSQL for deployment)
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://user:password@localhost:5432/shortify")
-app.config["SQLALCHEMY_DATABASE_URI"] = DATABASE_URL
-app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+DATABASE_FILE = os.path.join(BASE_DIR, "database.db")  # Change to "/tmp/database.db" for Render
+app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{DATABASE_FILE}"
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 
@@ -33,7 +33,7 @@ with app.app_context():
 
 # Function to generate a unique short code
 def generate_short_code():
-    return shortuuid.ShortUUID().random(length=6)  # ✅ 6-character short code
+    return shortuuid.ShortUUID().random(length=6)  # 6-character short code
 
 # Function to validate a custom short code
 def is_valid_short_code(code):
@@ -42,14 +42,13 @@ def is_valid_short_code(code):
 # Function to generate a QR code
 def generate_qr_code(short_url):
     qr = qrcode.make(short_url)
-    qr_folder = os.path.join(os.getcwd(), "static", "qr")
+    qr_folder = os.path.join(BASE_DIR, "static", "qr")
     os.makedirs(qr_folder, exist_ok=True)
 
-    qr_filename = f"{short_url.split('/')[-1]}.png"
-    qr_path = os.path.join(qr_folder, qr_filename)
+    qr_path = os.path.join(qr_folder, f"{short_url.split('/')[-1]}.png")
     qr.save(qr_path)
 
-    return f"/static/qr/{qr_filename}"  # ✅ Relative path for Flask API
+    return f"static/qr/{short_url.split('/')[-1]}.png"
 
 # Route to shorten a URL (with QR code)
 @app.route('/shorten', methods=['POST'])
@@ -61,13 +60,9 @@ def shorten_url():
     if not original_url:
         return jsonify({"error": "URL is required"}), 400
 
-    # Validate URL format
-    if not re.match(r"^(https?://)", original_url):
-        return jsonify({"error": "Invalid URL format. Must start with http:// or https://"}), 400
-
     # Validate custom code (if provided)
     if custom_code:
-        if not is_valid_short_code(custom_code):
+        if not is_valid_short_code(custom_code):  # ✅ Check if it contains only letters/numbers
             return jsonify({"error": "Custom short code must be alphanumeric (A-Z, a-z, 0-9) with no spaces"}), 400
 
         existing_url = ShortURL.query.filter_by(short_code=custom_code).first()
@@ -77,7 +72,7 @@ def shorten_url():
     else:
         short_code = generate_short_code()
 
-    short_url = f"{request.host_url}{short_code}"  # ✅ Uses dynamic host URL
+    short_url = f"http://127.0.0.1:5000/{short_code}"
 
     # Generate QR Code
     qr_code_path = generate_qr_code(short_url)
@@ -90,7 +85,7 @@ def shorten_url():
     return jsonify({
         "original_url": original_url,
         "short_url": short_url,
-        "qr_code": f"{request.host_url}{qr_code_path}"  # ✅ Uses full URL for QR code
+        "qr_code": f"http://127.0.0.1:5000/{qr_code_path}"
     })
 
 # Route to redirect a short URL to the original URL & track clicks
@@ -116,7 +111,7 @@ def get_analytics(short_code):
 
     return jsonify({
         "original_url": short_url.original_url,
-        "short_url": f"{request.host_url}{short_url.short_code}",
+        "short_url": f"http://127.0.0.1:5000/{short_url.short_code}",
         "clicks": short_url.clicks,
         "created_at": short_url.created_at.strftime("%Y-%m-%d %H:%M:%S"),
         "last_clicked": short_url.last_clicked.strftime("%Y-%m-%d %H:%M:%S") if short_url.last_clicked else "Never clicked"
