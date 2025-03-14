@@ -2,13 +2,15 @@ import { useState } from "react";
 import axios from "axios";
 import { FaLink, FaWrench, FaQrcode } from "react-icons/fa";
 
+// 🔹 Update API_BASE to use the deployed Render backend URL
+const API_BASE = "https://shortify-url-shortener-and-qr-code.onrender.com/"; // Replace with your actual Render backend URL
+
 export default function App() {
   const [url, setUrl] = useState("");
   const [customCode, setCustomCode] = useState("");
   const [shortUrl, setShortUrl] = useState("");
   const [qrCode, setQrCode] = useState("");
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState(false);
 
   const handleShorten = async () => {
     if (!url) {
@@ -17,7 +19,7 @@ export default function App() {
     }
 
     try {
-      const response = await axios.post("http://127.0.0.1:5000/shorten", {
+      const response = await axios.post(`${API_BASE}/shorten`, {
         url,
         custom_code: customCode,
       });
@@ -25,10 +27,8 @@ export default function App() {
       setShortUrl(response.data.short_url);
       setQrCode(response.data.qr_code);
       setError("");
-      setSuccess(true);
     } catch (err) {
       setError(err.response?.data.error || "Something went wrong.");
-      setSuccess(false);
     }
   };
 
